@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SRD App Hub</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0b0f1a;
+    --surface: #111827;
+    --surface2: #1a2236;
+    --border: rgba(255,255,255,0.07);
+    --text: #e8edf5;
+    --muted: #6b7a99;
+    --accent1: #3b82f6;
+    --accent2: #06b6d4;
+    --accent3: #8b5cf6;
+    --accent4: #10b981;
+  }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* Glow orbs */
+  .orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(120px);
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.25;
+  }
+  .orb-1 { width: 500px; height: 500px; background: #1e3a8a; top: -100px; left: -100px; }
+  .orb-2 { width: 400px; height: 400px; background: #0e7490; bottom: -100px; right: -100px; }
+
+  .wrapper {
+    position: relative;
+    z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+  }
+
+  /* Header */
+  header {
+    margin-bottom: 60px;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .brand-icon {
+    width: 44px;
+    height: 44px;
+    background: linear-gradient(135deg, var(--accent1), var(--accent2));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    flex-shrink: 0;
+    box-shadow: 0 0 20px rgba(59,130,246,0.4);
+  }
+
+  .brand-name {
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  header h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(32px, 6vw, 52px);
+    font-weight: 800;
+    line-height: 1.1;
+    background: linear-gradient(120deg, #e8edf5 30%, #6b93d6);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  header p {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 15px;
+    font-weight: 300;
+  }
+
+  /* App grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+
+  /* App card */
+  .card {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+    text-decoration: none;
+    color: inherit;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    overflow: hidden;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.15);
+  }
+
+  /* Accent top bar */
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--card-accent);
+    border-radius: 20px 20px 0 0;
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .card:hover::before { opacity: 1; }
+
+  /* Shimmer glow on hover */
+  .card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(600px circle at var(--mx, 50%) var(--my, 50%), rgba(255,255,255,0.04), transparent 60%);
+    border-radius: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+  }
+  .card:hover::after { opacity: 1; }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    background: var(--card-icon-bg);
+    flex-shrink: 0;
+  }
+
+  .card-body { flex: 1; }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 17px;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: var(--text);
+  }
+
+  .card-desc {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  .card-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+  }
+
+  .card-tag {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 99px;
+    background: var(--card-tag-bg);
+    color: var(--card-tag-color);
+  }
+
+  .card-arrow {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    border: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 14px;
+    transition: background 0.2s, color 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .card:hover .card-arrow {
+    background: var(--card-accent);
+    border-color: var(--card-accent);
+    color: white;
+    transform: rotate(-45deg);
+  }
+
+  /* Card color themes */
+  .card-1 {
+    --card-accent: linear-gradient(90deg, var(--accent1), var(--accent2));
+    --card-icon-bg: rgba(59,130,246,0.12);
+    --card-tag-bg: rgba(59,130,246,0.12);
+    --card-tag-color: #93c5fd;
+    animation-delay: 0.1s;
+  }
+  .card-2 {
+    --card-accent: linear-gradient(90deg, #06b6d4, #0891b2);
+    --card-icon-bg: rgba(6,182,212,0.12);
+    --card-tag-bg: rgba(6,182,212,0.12);
+    --card-tag-color: #67e8f9;
+    animation-delay: 0.2s;
+  }
+  .card-3 {
+    --card-accent: linear-gradient(90deg, var(--accent3), #7c3aed);
+    --card-icon-bg: rgba(139,92,246,0.12);
+    --card-tag-bg: rgba(139,92,246,0.12);
+    --card-tag-color: #c4b5fd;
+    animation-delay: 0.3s;
+  }
+  .card-4 {
+    --card-accent: linear-gradient(90deg, var(--accent4), #059669);
+    --card-icon-bg: rgba(16,185,129,0.12);
+    --card-tag-bg: rgba(16,185,129,0.12);
+    --card-tag-color: #6ee7b7;
+    animation-delay: 0.4s;
+  }
+
+  /* Footer */
+  footer {
+    margin-top: 64px;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+    animation: fadeUp 0.6s 0.5s ease both;
+  }
+
+  footer span {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--muted);
+    margin: 0 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(20px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 480px) {
+    .wrapper { padding: 40px 16px 60px; }
+    header { margin-bottom: 40px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="orb orb-1"></div>
+<div class="orb orb-2"></div>
+
+<div class="wrapper">
+
+  <header>
+    <div class="brand">
+      <div class="brand-icon">💊</div>
+      <div class="brand-name">Sir Ramos Drugstore</div>
+    </div>
+    <h1>App Hub</h1>
+    <p>All internal tools, in one place.</p>
+  </header>
+
+  <div class="grid">
+
+    <a href="https://stinkypatotie.github.io/monthlyduestracker/" target="_blank" rel="noopener" class="card card-1">
+      <div class="card-icon">📅</div>
+      <div class="card-body">
+        <div class="card-title">Monthly Dues Tracker</div>
+        <div class="card-desc">Track and manage monthly payment dues for both Main and Branch stores.</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tag">Finance</span>
+        <div class="card-arrow">→</div>
+      </div>
+    </a>
+
+    <a href="https://stinkypatotie.github.io/srds-GCashHub/" target="_blank" rel="noopener" class="card card-2">
+      <div class="card-icon">📲</div>
+      <div class="card-body">
+        <div class="card-title">GCash Hub</div>
+        <div class="card-desc">Compute GCash service fees and manage cashless transaction records.</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tag">Payments</span>
+        <div class="card-arrow">→</div>
+      </div>
+    </a>
+
+    <a href="https://stinkypatotie.github.io/srds-dtrpayslip/" target="_blank" rel="noopener" class="card card-3">
+      <div class="card-icon">🕐</div>
+      <div class="card-body">
+        <div class="card-title">DTR App</div>
+        <div class="card-desc">Daily time records, clock-in/out tracking, and payslip generation for staff.</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tag">HR</span>
+        <div class="card-arrow">→</div>
+      </div>
+    </a>
+
+    <a href="https://stinkypatotie.github.io/srds-orderkoto/" target="_blank" rel="noopener" class="card card-4">
+      <div class="card-icon">📦</div>
+      <div class="card-body">
+        <div class="card-title">Stockr</div>
+        <div class="card-desc">Inventory management for monitoring stock levels and product orders.</div>
+      </div>
+      <div class="card-footer">
+        <span class="card-tag">Inventory</span>
+        <div class="card-arrow">→</div>
+      </div>
+    </a>
+
+  </div>
+
+  <footer>
+    Sir Ramos Drugstore <span></span> Internal Use Only <span></span> &copy; 2026
+  </footer>
+
+</div>
+
+<script>
+  // Magnetic glow effect on cards
+  document.querySelectorAll('.card').forEach(card => {
+    card.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width) * 100;
+      const y = ((e.clientY - rect.top) / rect.height) * 100;
+      card.style.setProperty('--mx', x + '%');
+      card.style.setProperty('--my', y + '%');
+    });
+  });
+</script>
+
+</body>
+</html>
