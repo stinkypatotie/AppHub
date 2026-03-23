@@ -1,0 +1,1215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Budget">
+<title>Budget</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+<style>
+:root {
+  --bg: #F2F1EF;
+  --surface: #FFFFFF;
+  --surface2: #F8F7F5;
+  --border: rgba(0,0,0,0.07);
+  --text: #1A1A2E;
+  --text-2: #6B6B7B;
+  --text-3: #A0A0B0;
+  --accent: #5B4FE9;
+  --accent-light: #EAE8FF;
+  --income: #00B288;
+  --income-light: #E0F7F2;
+  --expense: #E8445A;
+  --expense-light: #FDEAED;
+  --savings: #F59E0B;
+  --savings-light: #FEF3D6;
+  --shadow: 0 2px 16px rgba(0,0,0,0.07);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.12);
+  --radius: 18px;
+  --radius-sm: 12px;
+  --safe-top: env(safe-area-inset-top, 44px);
+  --safe-bottom: env(safe-area-inset-bottom, 20px);
+  --tab-h: 96px;
+}
+[data-theme="dark"] {
+  --bg: #0F0F17;
+  --surface: #1C1C28;
+  --surface2: #252535;
+  --border: rgba(255,255,255,0.07);
+  --text: #F0F0F8;
+  --text-2: #9090A8;
+  --text-3: #5A5A70;
+  --accent: #7B72FF;
+  --accent-light: #1E1A3A;
+  --income-light: #0A2920;
+  --expense-light: #2A0A10;
+  --savings-light: #2A1E00;
+  --shadow: 0 2px 16px rgba(0,0,0,0.3);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,0.5);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; background: var(--bg); }
+body { font-family: 'Plus Jakarta Sans', sans-serif; color: var(--text); }
+
+/* ─── APP SHELL ─── */
+#app { display: flex; flex-direction: column; height: 100%; height: 100dvh; }
+#statusBar { height: var(--safe-top); background: var(--bg); flex-shrink: 0; }
+#content { flex: 1; overflow: hidden; position: relative; }
+.screen { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; padding-bottom: calc(var(--tab-h) + 16px); }
+.screen::-webkit-scrollbar { display: none; }
+
+/* ─── HEADER ─── */
+.header {
+  padding: 20px 20px 12px;
+  display: flex; align-items: center; justify-content: space-between;
+  position: sticky; top: 0; z-index: 10;
+  background: var(--bg);
+}
+.header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+.header-actions { display: flex; gap: 10px; }
+.icon-btn {
+  width: 38px; height: 38px; border-radius: 50%; border: none;
+  background: var(--surface); box-shadow: var(--shadow);
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; font-size: 16px; color: var(--text-2);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.icon-btn:active { transform: scale(0.92); }
+
+/* ─── CRITICAL: hidden screens ─── */
+.hidden { display: none !important; }
+
+/* ─── TAB BAR ─── */
+#tabBar {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  height: var(--tab-h);
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  display: flex;
+  padding-bottom: var(--safe-bottom);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 100;
+}
+.tab-btn {
+  flex: 1; display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 5px;
+  border: none; background: none; cursor: pointer;
+  padding: 10px 4px 4px;
+  color: var(--text-3);
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.2px;
+  transition: color 0.2s;
+}
+.tab-btn.active { color: var(--accent); }
+.tab-icon {
+  width: 36px; height: 36px; border-radius: 11px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 22px; transition: background 0.2s, transform 0.2s;
+}
+.tab-btn.active .tab-icon { background: var(--accent-light); transform: scale(1.08); }
+
+/* ─── CARDS ─── */
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 20px;
+  margin: 0 16px 12px;
+}
+.card-sm { padding: 14px 16px; }
+
+/* ─── SUMMARY / HERO ─── */
+.hero-card {
+  margin: 0 16px 16px;
+  border-radius: var(--radius);
+  background: linear-gradient(135deg, #5B4FE9 0%, #9B59F5 100%);
+  color: #fff;
+  padding: 24px;
+  position: relative; overflow: hidden;
+}
+.hero-card::before {
+  content: ''; position: absolute; inset: 0;
+  background: url("data:image/svg+xml,%3Csvg width='200' height='200' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='170' cy='30' r='80' fill='rgba(255,255,255,0.06)'/%3E%3Ccircle cx='10' cy='170' r='60' fill='rgba(255,255,255,0.04)'/%3E%3C/svg%3E") no-repeat;
+  background-size: cover;
+}
+.hero-label { font-size: 12px; font-weight: 600; opacity: 0.75; letter-spacing: 0.8px; text-transform: uppercase; position: relative; }
+.hero-amount { font-size: 40px; font-weight: 800; letter-spacing: -1px; position: relative; margin: 6px 0 20px; }
+.hero-row { display: flex; gap: 20px; position: relative; }
+.hero-mini { flex: 1; }
+.hero-mini-label { font-size: 11px; opacity: 0.65; font-weight: 500; }
+.hero-mini-val { font-size: 17px; font-weight: 700; margin-top: 2px; }
+.hero-mini-val.neg { color: #FFB3BC; }
+.hero-mini-val.pos { color: #A5F3D4; }
+
+/* ─── SECTION HEADER ─── */
+.section-header {
+  padding: 4px 20px 10px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.section-title { font-size: 18px; font-weight: 700; }
+.add-btn {
+  width: 32px; height: 32px; border-radius: 50%; border: none;
+  background: var(--accent); color: #fff;
+  font-size: 20px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; box-shadow: 0 4px 12px rgba(91,79,233,0.35);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.add-btn:active { transform: scale(0.9); }
+
+/* ─── LIST ITEMS ─── */
+.entry-list { padding: 0 16px; display: flex; flex-direction: column; gap: 8px; }
+.entry-item {
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 14px;
+  box-shadow: var(--shadow);
+  position: relative; overflow: hidden;
+  animation: slideIn 0.25s ease;
+}
+@keyframes slideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.entry-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.entry-info { flex: 1; min-width: 0; }
+.entry-label { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.entry-sub { font-size: 12px; color: var(--text-2); margin-top: 2px; }
+.entry-amount { font-size: 16px; font-weight: 700; text-align: right; white-space: nowrap; }
+.entry-actions { display: flex; gap: 6px; }
+.entry-action-btn {
+  width: 30px; height: 30px; border-radius: 8px;
+  border: none; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px;
+}
+.btn-edit { background: var(--accent-light); color: var(--accent); }
+.btn-del { background: var(--expense-light); color: var(--expense); }
+
+/* ─── INCOME ─── */
+.income-icon-bg { background: var(--income-light); }
+.income-amount { color: var(--income); }
+
+/* ─── EXPENSE ─── */
+.expense-icon-bg { background: var(--expense-light); }
+.expense-amount { color: var(--expense); }
+
+/* ─── SAVINGS ─── */
+.savings-icon-bg { background: var(--savings-light); }
+.savings-amount { color: var(--savings); }
+.progress-bar-wrap { margin-top: 6px; height: 5px; background: var(--bg); border-radius: 99px; overflow: hidden; }
+.progress-bar { height: 100%; background: var(--savings); border-radius: 99px; transition: width 0.6s ease; }
+
+/* ─── DONUT CHART ─── */
+.donut-wrap { display: flex; align-items: center; gap: 20px; padding: 4px 0; }
+.donut-svg { flex-shrink: 0; }
+.donut-legend { flex: 1; display: flex; flex-direction: column; gap: 8px; }
+.legend-item { display: flex; align-items: center; gap: 8px; }
+.legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.legend-name { font-size: 13px; color: var(--text-2); flex: 1; }
+.legend-pct { font-size: 13px; font-weight: 700; }
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  position: fixed; inset: 0; z-index: 200;
+  background: rgba(0,0,0,0.5);
+  display: flex; align-items: flex-end; justify-content: center;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease;
+}
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.modal-overlay.hidden { display: none; }
+.modal-sheet {
+  width: 100%; max-width: 480px;
+  background: var(--surface);
+  border-radius: 24px 24px 0 0;
+  padding: 16px 20px calc(var(--safe-bottom) + 20px);
+  animation: slideUp 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+.modal-handle { width: 36px; height: 4px; border-radius: 2px; background: var(--border); margin: 0 auto 20px; }
+.modal-title { font-size: 20px; font-weight: 700; margin-bottom: 20px; }
+.form-group { margin-bottom: 14px; }
+.form-label { font-size: 12px; font-weight: 600; color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; display: block; }
+.form-input {
+  width: 100%; padding: 13px 16px;
+  border: 2px solid var(--border);
+  border-radius: 14px; background: var(--surface2);
+  color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15px; font-weight: 500;
+  transition: border-color 0.2s;
+  outline: none;
+}
+.form-input:focus { border-color: var(--accent); }
+.emoji-picker { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.emoji-opt {
+  width: 40px; height: 40px; border-radius: 12px; border: 2px solid transparent;
+  background: var(--surface2); font-size: 20px;
+  display: flex; align-items: center; justify-content: center;
+  cursor: pointer; transition: border-color 0.15s, transform 0.15s;
+}
+.emoji-opt.selected { border-color: var(--accent); transform: scale(1.1); }
+.btn-row { display: flex; gap: 10px; margin-top: 20px; }
+.btn-cancel {
+  flex: 1; padding: 14px; border-radius: 14px; border: 2px solid var(--border);
+  background: var(--surface2); color: var(--text); font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.btn-save {
+  flex: 2; padding: 14px; border-radius: 14px; border: none;
+  background: var(--accent); color: #fff; font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15px; font-weight: 700; cursor: pointer;
+  box-shadow: 0 4px 16px rgba(91,79,233,0.4);
+  transition: opacity 0.15s;
+}
+.btn-save:active { opacity: 0.85; }
+
+/* ─── CATEGORY CHIPS ─── */
+.chip-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+.chip {
+  padding: 7px 14px; border-radius: 99px;
+  background: var(--surface2); font-size: 13px; font-weight: 600;
+  cursor: pointer; border: 2px solid transparent;
+  transition: border-color 0.15s, background 0.15s;
+  color: var(--text-2);
+}
+.chip.selected { border-color: var(--accent); background: var(--accent-light); color: var(--accent); }
+
+/* ─── CAPTURE OVERLAY ─── */
+#captureOverlay {
+  position: fixed; inset: 0; z-index: 300;
+  background: var(--bg);
+  overflow-y: auto;
+  display: none;
+  flex-direction: column;
+}
+#captureOverlay.visible { display: flex; }
+#captureContent {
+  padding: 32px 20px 20px;
+  background: var(--bg);
+  flex: 1;
+}
+.capture-header {
+  text-align: center; margin-bottom: 28px;
+}
+.capture-title { font-size: 24px; font-weight: 800; }
+.capture-date { font-size: 13px; color: var(--text-2); margin-top: 4px; }
+.capture-section { margin-bottom: 20px; }
+.capture-section-title {
+  font-size: 12px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1px; color: var(--text-2); margin-bottom: 10px;
+}
+.capture-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; background: var(--surface);
+  border-radius: 10px; margin-bottom: 6px;
+}
+.capture-item-label { font-size: 14px; font-weight: 500; }
+.capture-item-amount { font-size: 14px; font-weight: 700; }
+.capture-total {
+  padding: 14px 16px; border-radius: 12px; margin-top: 4px;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.capture-actions {
+  padding: 16px 20px;
+  display: flex; gap: 12px;
+  background: var(--surface); border-top: 1px solid var(--border);
+}
+.capture-btn {
+  flex: 1; padding: 14px; border-radius: 14px; border: none;
+  font-family: 'Plus Jakarta Sans', sans-serif;
+  font-size: 15px; font-weight: 600; cursor: pointer;
+}
+.capture-btn.secondary { background: var(--surface2); color: var(--text); }
+.capture-btn.primary { background: var(--accent); color: #fff; }
+
+/* ─── EMPTY STATE ─── */
+.empty-state {
+  text-align: center; padding: 40px 20px;
+  color: var(--text-3); font-size: 14px;
+}
+.empty-state-icon { font-size: 40px; margin-bottom: 10px; }
+
+/* ─── MONTH SELECTOR ─── */
+.month-row {
+  display: flex; align-items: center; justify-content: center;
+  gap: 16px; padding: 0 20px 12px;
+}
+.month-nav {
+  width: 34px; height: 34px; border-radius: 50%;
+  border: none; background: var(--surface);
+  box-shadow: var(--shadow); cursor: pointer;
+  font-size: 16px; color: var(--text-2);
+  display: flex; align-items: center; justify-content: center;
+}
+.month-label { font-size: 16px; font-weight: 700; }
+
+/* ─── SWIPE DELETE ─── */
+.entry-item { touch-action: pan-y; }
+.swipe-hint { position: absolute; right: 0; top: 0; bottom: 0; width: 70px; background: var(--expense); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0; opacity: 0; transition: opacity 0.2s; }
+</style>
+</head>
+<body data-theme="light">
+
+<div id="app">
+  <div id="statusBar"></div>
+  <div id="content">
+
+    <!-- ══════════ DASHBOARD ══════════ -->
+    <div class="screen" id="screen-dashboard">
+      <div class="header">
+        <h1>Overview</h1>
+        <div class="header-actions">
+          <button class="icon-btn" onclick="toggleTheme()" title="Toggle theme">🌓</button>
+          <button class="icon-btn" onclick="showCapture()" title="Capture">📸</button>
+        </div>
+      </div>
+
+      <div class="month-row">
+        <button class="month-nav" onclick="changeMonth(-1)">‹</button>
+        <span class="month-label" id="monthLabel">March 2026</span>
+        <button class="month-nav" onclick="changeMonth(1)">›</button>
+      </div>
+
+      <div class="hero-card" id="heroCard">
+        <div class="hero-label">Net Balance</div>
+        <div class="hero-amount" id="heroBalance">₱0.00</div>
+        <div class="hero-row">
+          <div class="hero-mini">
+            <div class="hero-mini-label">Income</div>
+            <div class="hero-mini-val pos" id="heroIncome">₱0</div>
+          </div>
+          <div class="hero-mini">
+            <div class="hero-mini-label">Expenses</div>
+            <div class="hero-mini-val neg" id="heroExpenses">₱0</div>
+          </div>
+          <div class="hero-mini">
+            <div class="hero-mini-label">Savings</div>
+            <div class="hero-mini-val pos" id="heroSavings">₱0</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" id="donutCard">
+        <div style="font-size:14px;font-weight:700;margin-bottom:14px">Breakdown</div>
+        <div class="donut-wrap">
+          <svg class="donut-svg" width="110" height="110" viewBox="0 0 110 110" id="donutSvg">
+            <circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="16"/>
+          </svg>
+          <div class="donut-legend" id="donutLegend"></div>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="section-header">
+        <span class="section-title">Recent</span>
+      </div>
+      <div class="entry-list" id="recentList"></div>
+    </div>
+
+    <!-- ══════════ INCOME ══════════ -->
+    <div class="screen hidden" id="screen-income">
+      <div class="header">
+        <h1>Income</h1>
+        <div class="header-actions">
+          <button class="icon-btn" onclick="toggleTheme()">🌓</button>
+        </div>
+      </div>
+
+      <div class="month-row">
+        <button class="month-nav" onclick="changeMonth(-1)">‹</button>
+        <span class="month-label" id="monthLabelIncome">March 2026</span>
+        <button class="month-nav" onclick="changeMonth(1)">›</button>
+      </div>
+
+      <div class="card" style="text-align:center;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px">Total Income</div>
+        <div style="font-size:34px;font-weight:800;color:var(--income);margin-top:4px" id="incomeTotalDisplay">₱0.00</div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Sources</span>
+        <button class="add-btn" onclick="openModal('income')">+</button>
+      </div>
+      <div class="entry-list" id="incomeList"></div>
+    </div>
+
+    <!-- ══════════ EXPENSES ══════════ -->
+    <div class="screen hidden" id="screen-expenses">
+      <div class="header">
+        <h1>Expenses</h1>
+        <div class="header-actions">
+          <button class="icon-btn" onclick="toggleTheme()">🌓</button>
+        </div>
+      </div>
+
+      <div class="month-row">
+        <button class="month-nav" onclick="changeMonth(-1)">‹</button>
+        <span class="month-label" id="monthLabelExpenses">March 2026</span>
+        <button class="month-nav" onclick="changeMonth(1)">›</button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+          <span style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px">Total Expenses</span>
+          <span style="font-size:28px;font-weight:800;color:var(--expense)" id="expenseTotalDisplay">₱0.00</span>
+        </div>
+        <!-- Category breakdown -->
+        <div id="expenseCategoryBreakdown" style="display:flex;flex-direction:column;gap:8px"></div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">All Expenses</span>
+        <button class="add-btn" onclick="openModal('expense')">+</button>
+      </div>
+      <div class="entry-list" id="expenseList"></div>
+    </div>
+
+    <!-- ══════════ SAVINGS ══════════ -->
+    <div class="screen hidden" id="screen-savings">
+      <div class="header">
+        <h1>Savings</h1>
+        <div class="header-actions">
+          <button class="icon-btn" onclick="toggleTheme()">🌓</button>
+        </div>
+      </div>
+
+      <div class="card" style="text-align:center;margin-bottom:16px">
+        <div style="font-size:12px;font-weight:600;color:var(--text-2);text-transform:uppercase;letter-spacing:.5px">Total Saved</div>
+        <div style="font-size:34px;font-weight:800;color:var(--savings);margin-top:4px" id="savingsTotalDisplay">₱0.00</div>
+      </div>
+
+      <div class="section-header">
+        <span class="section-title">Goals</span>
+        <button class="add-btn" onclick="openModal('savings')">+</button>
+      </div>
+      <div class="entry-list" id="savingsList"></div>
+    </div>
+
+  </div><!-- /content -->
+
+  <!-- ── TAB BAR ── -->
+  <nav id="tabBar">
+    <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')">
+      <div class="tab-icon">🏠</div>Overview
+    </button>
+    <button class="tab-btn" data-tab="income" onclick="switchTab('income')">
+      <div class="tab-icon">💰</div>Income
+    </button>
+    <button class="tab-btn" data-tab="expenses" onclick="switchTab('expenses')">
+      <div class="tab-icon">🧾</div>Expenses
+    </button>
+    <button class="tab-btn" data-tab="savings" onclick="switchTab('savings')">
+      <div class="tab-icon">🏦</div>Savings
+    </button>
+  </nav>
+</div><!-- /app -->
+
+<!-- ══════════ MODALS ══════════ -->
+
+<!-- Income Modal -->
+<div class="modal-overlay hidden" id="modalIncome">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="incomeMT">Add Income</div>
+    <div class="form-group">
+      <label class="form-label">Label / Source</label>
+      <input class="form-input" id="incomeLabelInput" placeholder="e.g. Monthly Salary, Freelance…" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Amount (₱)</label>
+      <input class="form-input" id="incomeAmountInput" placeholder="0.00" type="number" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Icon</label>
+      <div class="emoji-picker" id="incomeEmojiPicker">
+        <div class="emoji-opt selected" data-emoji="💰" onclick="selectEmoji(this,'income')">💰</div>
+        <div class="emoji-opt" data-emoji="💼" onclick="selectEmoji(this,'income')">💼</div>
+        <div class="emoji-opt" data-emoji="🏪" onclick="selectEmoji(this,'income')">🏪</div>
+        <div class="emoji-opt" data-emoji="📱" onclick="selectEmoji(this,'income')">📱</div>
+        <div class="emoji-opt" data-emoji="🎨" onclick="selectEmoji(this,'income')">🎨</div>
+        <div class="emoji-opt" data-emoji="🎸" onclick="selectEmoji(this,'income')">🎸</div>
+        <div class="emoji-opt" data-emoji="🚗" onclick="selectEmoji(this,'income')">🚗</div>
+        <div class="emoji-opt" data-emoji="🏠" onclick="selectEmoji(this,'income')">🏠</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input class="form-input" id="incomeDateInput" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <input class="form-input" id="incomeNotesInput" placeholder="Any details…" type="text">
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="closeModal('income')">Cancel</button>
+      <button class="btn-save" onclick="saveEntry('income')">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Expense Modal -->
+<div class="modal-overlay hidden" id="modalExpense">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="expenseMT">Add Expense</div>
+    <div class="form-group">
+      <label class="form-label">Item / Description</label>
+      <input class="form-input" id="expenseLabelInput" placeholder="e.g. Groceries, Internet Bill…" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Amount (₱)</label>
+      <input class="form-input" id="expenseAmountInput" placeholder="0.00" type="number" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Category</label>
+      <div class="chip-row" id="expenseCategoryChips">
+        <div class="chip selected" data-cat="Food">🍔 Food</div>
+        <div class="chip" data-cat="Utilities">⚡ Utilities</div>
+        <div class="chip" data-cat="Transport">🚌 Transport</div>
+        <div class="chip" data-cat="Health">🏥 Health</div>
+        <div class="chip" data-cat="Shopping">🛍️ Shopping</div>
+        <div class="chip" data-cat="Entertainment">🎬 Entertainment</div>
+        <div class="chip" data-cat="Education">📚 Education</div>
+        <div class="chip" data-cat="Other">📦 Other</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Date</label>
+      <input class="form-input" id="expenseDateInput" type="date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Store / Vendor (optional)</label>
+      <input class="form-input" id="expenseVendorInput" placeholder="Where did you spend?" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <input class="form-input" id="expenseNotesInput" placeholder="Any details…" type="text">
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="closeModal('expense')">Cancel</button>
+      <button class="btn-save" onclick="saveEntry('expense')">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Savings Modal -->
+<div class="modal-overlay hidden" id="modalSavings">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="savingsMT">Add Savings Goal</div>
+    <div class="form-group">
+      <label class="form-label">Label / Goal Name</label>
+      <input class="form-input" id="savingsLabelInput" placeholder="e.g. Emergency Fund, Vacation…" type="text">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Amount Saved (₱)</label>
+      <input class="form-input" id="savingsAmountInput" placeholder="0.00" type="number" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Target Amount (₱)</label>
+      <input class="form-input" id="savingsTargetInput" placeholder="0.00" type="number" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Icon</label>
+      <div class="emoji-picker" id="savingsEmojiPicker">
+        <div class="emoji-opt selected" data-emoji="🏦" onclick="selectEmoji(this,'savings')">🏦</div>
+        <div class="emoji-opt" data-emoji="✈️" onclick="selectEmoji(this,'savings')">✈️</div>
+        <div class="emoji-opt" data-emoji="🏠" onclick="selectEmoji(this,'savings')">🏠</div>
+        <div class="emoji-opt" data-emoji="🎓" onclick="selectEmoji(this,'savings')">🎓</div>
+        <div class="emoji-opt" data-emoji="💊" onclick="selectEmoji(this,'savings')">💊</div>
+        <div class="emoji-opt" data-emoji="🛍️" onclick="selectEmoji(this,'savings')">🛍️</div>
+        <div class="emoji-opt" data-emoji="💍" onclick="selectEmoji(this,'savings')">💍</div>
+        <div class="emoji-opt" data-emoji="🎯" onclick="selectEmoji(this,'savings')">🎯</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Notes (optional)</label>
+      <input class="form-input" id="savingsNotesInput" placeholder="What is this for?" type="text">
+    </div>
+    <div class="btn-row">
+      <button class="btn-cancel" onclick="closeModal('savings')">Cancel</button>
+      <button class="btn-save" onclick="saveEntry('savings')">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Capture Overlay -->
+<div id="captureOverlay">
+  <div id="captureContent">
+    <div class="capture-header">
+      <div class="capture-title">💵 Budget Summary</div>
+      <div class="capture-date" id="capDate"></div>
+    </div>
+
+    <!-- Hero numbers -->
+    <div style="background:linear-gradient(135deg,#5B4FE9,#9B59F5);border-radius:16px;padding:20px;margin-bottom:16px;color:#fff">
+      <div style="font-size:11px;opacity:.7;font-weight:600;text-transform:uppercase;letter-spacing:.8px">Net Balance</div>
+      <div style="font-size:36px;font-weight:800;margin:4px 0 14px" id="capBalance">₱0</div>
+      <div style="display:flex;gap:16px">
+        <div><div style="font-size:11px;opacity:.65">Income</div><div style="font-size:16px;font-weight:700;color:#A5F3D4" id="capIncome">₱0</div></div>
+        <div><div style="font-size:11px;opacity:.65">Expenses</div><div style="font-size:16px;font-weight:700;color:#FFB3BC" id="capExpenses">₱0</div></div>
+        <div><div style="font-size:11px;opacity:.65">Savings</div><div style="font-size:16px;font-weight:700;color:#FDE68A" id="capSavings">₱0</div></div>
+      </div>
+    </div>
+
+    <div class="capture-section" id="capIncomeSection"></div>
+    <div class="capture-section" id="capExpenseSection"></div>
+    <div class="capture-section" id="capSavingsSection"></div>
+
+    <div style="text-align:center;font-size:11px;color:var(--text-3);margin-top:16px">Generated with Budget App</div>
+  </div>
+  <div class="capture-actions">
+    <button class="capture-btn secondary" onclick="hideCapture()">← Back</button>
+    <button class="capture-btn primary" onclick="doCapture()">📸 Save Image</button>
+  </div>
+</div>
+
+<script>
+// ─────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────
+let currentTab = 'dashboard';
+let currentMonth = new Date().getMonth();
+let currentYear = new Date().getFullYear();
+let editId = null;
+let selectedEmojis = { income: '💰', savings: '🏦' };
+let selectedExpenseCat = 'Food';
+
+const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+
+const CATEGORY_ICONS = {
+  'Food':'🍔','Utilities':'⚡','Transport':'🚌','Health':'🏥',
+  'Shopping':'🛍️','Entertainment':'🎬','Education':'📚','Other':'📦'
+};
+
+function getKey(type) { return `budget_${type}_${currentYear}_${currentMonth}`; }
+
+function loadData(type) {
+  try { return JSON.parse(localStorage.getItem(getKey(type))) || []; } catch { return []; }
+}
+function saveData(type, data) { localStorage.setItem(getKey(type), JSON.stringify(data)); }
+
+// ─────────────────────────────────────────
+//  MONTH NAVIGATION
+// ─────────────────────────────────────────
+function changeMonth(dir) {
+  currentMonth += dir;
+  if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+  if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+  renderAll();
+}
+function updateMonthLabels() {
+  const lbl = `${MONTHS[currentMonth]} ${currentYear}`;
+  ['monthLabel','monthLabelIncome','monthLabelExpenses'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = lbl;
+  });
+}
+
+// ─────────────────────────────────────────
+//  CURRENCY FORMAT
+// ─────────────────────────────────────────
+function fmt(n) { return '₱' + Number(n||0).toLocaleString('en-PH', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function fmtShort(n) {
+  n = Number(n||0);
+  if (n >= 1000000) return '₱' + (n/1000000).toFixed(1) + 'M';
+  if (n >= 1000) return '₱' + (n/1000).toFixed(1) + 'K';
+  return fmt(n);
+}
+
+// ─────────────────────────────────────────
+//  TABS
+// ─────────────────────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`screen-${tab}`).classList.remove('hidden');
+  document.querySelector(`[data-tab="${tab}"]`).classList.add('active');
+  currentTab = tab;
+  renderAll();
+}
+
+// ─────────────────────────────────────────
+//  MODAL
+// ─────────────────────────────────────────
+function openModal(type, id = null) {
+  editId = id;
+  const today = new Date().toISOString().split('T')[0];
+
+  if (type === 'income') {
+    const modal = document.getElementById('modalIncome');
+    document.getElementById('incomeMT').textContent = id ? 'Edit Income' : 'Add Income';
+    if (id) {
+      const entry = loadData('income').find(e => e.id === id);
+      document.getElementById('incomeLabelInput').value = entry.label;
+      document.getElementById('incomeAmountInput').value = entry.amount;
+      document.getElementById('incomeDateInput').value = entry.date || today;
+      document.getElementById('incomeNotesInput').value = entry.notes || '';
+      selectEmojiByValue(entry.emoji || '💰', 'income');
+    } else {
+      document.getElementById('incomeLabelInput').value = '';
+      document.getElementById('incomeAmountInput').value = '';
+      document.getElementById('incomeDateInput').value = today;
+      document.getElementById('incomeNotesInput').value = '';
+      selectEmojiByValue('💰', 'income');
+    }
+    modal.classList.remove('hidden');
+  } else if (type === 'expense') {
+    const modal = document.getElementById('modalExpense');
+    document.getElementById('expenseMT').textContent = id ? 'Edit Expense' : 'Add Expense';
+    if (id) {
+      const entry = loadData('expense').find(e => e.id === id);
+      document.getElementById('expenseLabelInput').value = entry.label;
+      document.getElementById('expenseAmountInput').value = entry.amount;
+      document.getElementById('expenseDateInput').value = entry.date || today;
+      document.getElementById('expenseVendorInput').value = entry.vendor || '';
+      document.getElementById('expenseNotesInput').value = entry.notes || '';
+      setExpenseCat(entry.category || 'Food');
+    } else {
+      document.getElementById('expenseLabelInput').value = '';
+      document.getElementById('expenseAmountInput').value = '';
+      document.getElementById('expenseDateInput').value = today;
+      document.getElementById('expenseVendorInput').value = '';
+      document.getElementById('expenseNotesInput').value = '';
+      setExpenseCat('Food');
+    }
+    modal.classList.remove('hidden');
+  } else if (type === 'savings') {
+    const modal = document.getElementById('modalSavings');
+    document.getElementById('savingsMT').textContent = id ? 'Edit Savings' : 'Add Savings Goal';
+    if (id) {
+      const entry = loadData('savings').find(e => e.id === id);
+      document.getElementById('savingsLabelInput').value = entry.label;
+      document.getElementById('savingsAmountInput').value = entry.amount;
+      document.getElementById('savingsTargetInput').value = entry.target || '';
+      document.getElementById('savingsNotesInput').value = entry.notes || '';
+      selectEmojiByValue(entry.emoji || '🏦', 'savings');
+    } else {
+      document.getElementById('savingsLabelInput').value = '';
+      document.getElementById('savingsAmountInput').value = '';
+      document.getElementById('savingsTargetInput').value = '';
+      document.getElementById('savingsNotesInput').value = '';
+      selectEmojiByValue('🏦', 'savings');
+    }
+    modal.classList.remove('hidden');
+  }
+}
+
+function closeModal(type) {
+  document.getElementById(`modal${type.charAt(0).toUpperCase()+type.slice(1)}`).classList.add('hidden');
+  editId = null;
+}
+
+function saveEntry(type) {
+  if (type === 'income') {
+    const label = document.getElementById('incomeLabelInput').value.trim();
+    const amount = parseFloat(document.getElementById('incomeAmountInput').value);
+    if (!label || isNaN(amount) || amount <= 0) return;
+    const data = loadData('income');
+    const entry = {
+      id: editId || Date.now().toString(),
+      label, amount,
+      emoji: selectedEmojis.income,
+      date: document.getElementById('incomeDateInput').value,
+      notes: document.getElementById('incomeNotesInput').value.trim(),
+      createdAt: Date.now()
+    };
+    if (editId) {
+      const idx = data.findIndex(e => e.id === editId);
+      if (idx > -1) data[idx] = entry;
+    } else { data.push(entry); }
+    saveData('income', data);
+    closeModal('income');
+    renderAll();
+  } else if (type === 'expense') {
+    const label = document.getElementById('expenseLabelInput').value.trim();
+    const amount = parseFloat(document.getElementById('expenseAmountInput').value);
+    if (!label || isNaN(amount) || amount <= 0) return;
+    const data = loadData('expense');
+    const entry = {
+      id: editId || Date.now().toString(),
+      label, amount,
+      category: selectedExpenseCat,
+      date: document.getElementById('expenseDateInput').value,
+      vendor: document.getElementById('expenseVendorInput').value.trim(),
+      notes: document.getElementById('expenseNotesInput').value.trim(),
+      createdAt: Date.now()
+    };
+    if (editId) {
+      const idx = data.findIndex(e => e.id === editId);
+      if (idx > -1) data[idx] = entry;
+    } else { data.push(entry); }
+    saveData('expense', data);
+    closeModal('expense');
+    renderAll();
+  } else if (type === 'savings') {
+    const label = document.getElementById('savingsLabelInput').value.trim();
+    const amount = parseFloat(document.getElementById('savingsAmountInput').value);
+    if (!label || isNaN(amount) || amount <= 0) return;
+    const data = loadData('savings');
+    const entry = {
+      id: editId || Date.now().toString(),
+      label, amount,
+      target: parseFloat(document.getElementById('savingsTargetInput').value) || 0,
+      emoji: selectedEmojis.savings,
+      notes: document.getElementById('savingsNotesInput').value.trim(),
+      createdAt: Date.now()
+    };
+    if (editId) {
+      const idx = data.findIndex(e => e.id === editId);
+      if (idx > -1) data[idx] = entry;
+    } else { data.push(entry); }
+    saveData('savings', data);
+    closeModal('savings');
+    renderAll();
+  }
+}
+
+function deleteEntry(type, id) {
+  const data = loadData(type).filter(e => e.id !== id);
+  saveData(type, data);
+  renderAll();
+}
+
+// ─────────────────────────────────────────
+//  EMOJI / CATEGORY SELECTORS
+// ─────────────────────────────────────────
+function selectEmoji(el, type) {
+  document.querySelectorAll(`#${type}EmojiPicker .emoji-opt`).forEach(e => e.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedEmojis[type] = el.dataset.emoji;
+}
+function selectEmojiByValue(emoji, type) {
+  const picker = document.getElementById(`${type}EmojiPicker`);
+  picker.querySelectorAll('.emoji-opt').forEach(e => {
+    e.classList.toggle('selected', e.dataset.emoji === emoji);
+  });
+  selectedEmojis[type] = emoji;
+}
+function setExpenseCat(cat) {
+  selectedExpenseCat = cat;
+  document.querySelectorAll('#expenseCategoryChips .chip').forEach(c => {
+    c.classList.toggle('selected', c.dataset.cat === cat);
+  });
+}
+document.querySelectorAll('#expenseCategoryChips .chip').forEach(c => {
+  c.onclick = () => setExpenseCat(c.dataset.cat);
+});
+
+// Close modal on backdrop click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) {
+      const id = overlay.id.replace('modal','').toLowerCase();
+      closeModal(id);
+    }
+  });
+});
+
+// ─────────────────────────────────────────
+//  RENDER FUNCTIONS
+// ─────────────────────────────────────────
+function renderAll() {
+  updateMonthLabels();
+  renderIncome();
+  renderExpenses();
+  renderSavings();
+  renderDashboard();
+}
+
+function renderIncome() {
+  const data = loadData('income');
+  const total = data.reduce((s,e) => s + Number(e.amount), 0);
+  document.getElementById('incomeTotalDisplay').textContent = fmt(total);
+
+  const list = document.getElementById('incomeList');
+  if (!data.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">💰</div>No income added yet.<br>Tap + to add a source.</div>`;
+    return;
+  }
+  list.innerHTML = data.map(e => `
+    <div class="entry-item" id="ei-${e.id}">
+      <div class="entry-icon income-icon-bg">${e.emoji||'💰'}</div>
+      <div class="entry-info">
+        <div class="entry-label">${esc(e.label)}</div>
+        <div class="entry-sub">${e.date||''} ${e.notes ? '· '+esc(e.notes) : ''}</div>
+      </div>
+      <div class="entry-amount income-amount">${fmt(e.amount)}</div>
+      <div class="entry-actions">
+        <button class="entry-action-btn btn-edit" onclick="openModal('income','${e.id}')">✏️</button>
+        <button class="entry-action-btn btn-del" onclick="deleteEntry('income','${e.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderExpenses() {
+  const data = loadData('expense');
+  const total = data.reduce((s,e) => s + Number(e.amount), 0);
+  document.getElementById('expenseTotalDisplay').textContent = fmt(total);
+
+  // Category breakdown
+  const cats = {};
+  data.forEach(e => { cats[e.category] = (cats[e.category]||0) + Number(e.amount); });
+  const breakdown = document.getElementById('expenseCategoryBreakdown');
+  breakdown.innerHTML = Object.entries(cats).sort((a,b)=>b[1]-a[1]).map(([cat, amt]) => {
+    const pct = total ? Math.round(amt/total*100) : 0;
+    return `
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:16px">${CATEGORY_ICONS[cat]||'📦'}</span>
+        <div style="flex:1">
+          <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+            <span style="font-size:13px;font-weight:600">${cat}</span>
+            <span style="font-size:13px;font-weight:700;color:var(--expense)">${fmt(amt)} <span style="font-weight:500;color:var(--text-2)">${pct}%</span></span>
+          </div>
+          <div style="height:4px;background:var(--bg);border-radius:99px;overflow:hidden">
+            <div style="height:100%;width:${pct}%;background:var(--expense);border-radius:99px;transition:width .6s ease"></div>
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  const list = document.getElementById('expenseList');
+  if (!data.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🧾</div>No expenses logged yet.<br>Tap + to add one.</div>`;
+    return;
+  }
+  // Sort by date desc
+  const sorted = [...data].sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1);
+  list.innerHTML = sorted.map(e => `
+    <div class="entry-item">
+      <div class="entry-icon expense-icon-bg">${CATEGORY_ICONS[e.category]||'📦'}</div>
+      <div class="entry-info">
+        <div class="entry-label">${esc(e.label)}</div>
+        <div class="entry-sub">
+          ${e.category} ${e.date ? '· '+e.date : ''} ${e.vendor ? '· '+esc(e.vendor) : ''}
+          ${e.notes ? '<br>'+esc(e.notes) : ''}
+        </div>
+      </div>
+      <div class="entry-amount expense-amount">-${fmt(e.amount)}</div>
+      <div class="entry-actions">
+        <button class="entry-action-btn btn-edit" onclick="openModal('expense','${e.id}')">✏️</button>
+        <button class="entry-action-btn btn-del" onclick="deleteEntry('expense','${e.id}')">🗑️</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderSavings() {
+  const data = loadData('savings');
+  const total = data.reduce((s,e) => s + Number(e.amount), 0);
+  document.getElementById('savingsTotalDisplay').textContent = fmt(total);
+
+  const list = document.getElementById('savingsList');
+  if (!data.length) {
+    list.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🏦</div>No savings goals yet.<br>Tap + to set one.</div>`;
+    return;
+  }
+  list.innerHTML = data.map(e => {
+    const pct = e.target > 0 ? Math.min(100, Math.round(Number(e.amount)/e.target*100)) : 0;
+    const hasTarget = e.target > 0;
+    return `
+    <div class="entry-item" style="flex-direction:column;align-items:flex-start;gap:8px">
+      <div style="display:flex;align-items:center;gap:12px;width:100%">
+        <div class="entry-icon savings-icon-bg">${e.emoji||'🏦'}</div>
+        <div class="entry-info">
+          <div class="entry-label">${esc(e.label)}</div>
+          <div class="entry-sub">${e.notes ? esc(e.notes) : (hasTarget ? 'Goal: '+fmt(e.target) : 'No target set')}</div>
+        </div>
+        <div style="text-align:right">
+          <div class="entry-amount savings-amount">${fmt(e.amount)}</div>
+          ${hasTarget ? `<div style="font-size:11px;color:var(--text-2)">${pct}%</div>` : ''}
+        </div>
+        <div class="entry-actions">
+          <button class="entry-action-btn btn-edit" onclick="openModal('savings','${e.id}')">✏️</button>
+          <button class="entry-action-btn btn-del" onclick="deleteEntry('savings','${e.id}')">🗑️</button>
+        </div>
+      </div>
+      ${hasTarget ? `
+      <div style="width:100%;padding:0 2px">
+        <div class="progress-bar-wrap">
+          <div class="progress-bar" style="width:${pct}%"></div>
+        </div>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function renderDashboard() {
+  const income = loadData('income').reduce((s,e) => s + Number(e.amount), 0);
+  const expenses = loadData('expense').reduce((s,e) => s + Number(e.amount), 0);
+  const savings = loadData('savings').reduce((s,e) => s + Number(e.amount), 0);
+  const balance = income - expenses - savings;
+
+  document.getElementById('heroBalance').textContent = fmt(balance);
+  document.getElementById('heroIncome').textContent = fmtShort(income);
+  document.getElementById('heroExpenses').textContent = fmtShort(expenses);
+  document.getElementById('heroSavings').textContent = fmtShort(savings);
+
+  // Donut
+  renderDonut(income, expenses, savings);
+
+  // Recent
+  const incData = loadData('income').map(e => ({...e, _type:'income'}));
+  const exData = loadData('expense').map(e => ({...e, _type:'expense'}));
+  const combined = [...incData, ...exData].sort((a,b) => (b.date||'') > (a.date||'') ? 1 : -1).slice(0,6);
+  const recent = document.getElementById('recentList');
+  if (!combined.length) {
+    recent.innerHTML = `<div class="empty-state"><div class="empty-state-icon">📊</div>Nothing here yet.<br>Add income or expenses to see them.</div>`;
+    return;
+  }
+  recent.innerHTML = combined.map(e => {
+    const isInc = e._type === 'income';
+    return `
+    <div class="entry-item">
+      <div class="entry-icon ${isInc?'income-icon-bg':'expense-icon-bg'}">${isInc ? (e.emoji||'💰') : (CATEGORY_ICONS[e.category]||'📦')}</div>
+      <div class="entry-info">
+        <div class="entry-label">${esc(e.label)}</div>
+        <div class="entry-sub">${isInc ? 'Income' : e.category} · ${e.date||''}</div>
+      </div>
+      <div class="entry-amount ${isInc?'income-amount':'expense-amount'}">${isInc?'+':'-'}${fmt(e.amount)}</div>
+    </div>`;
+  }).join('');
+}
+
+function renderDonut(income, expenses, savings) {
+  const total = income + expenses + savings;
+  const svg = document.getElementById('donutSvg');
+  const legend = document.getElementById('donutLegend');
+  if (!total) {
+    svg.innerHTML = `<circle cx="55" cy="55" r="40" fill="none" stroke="var(--border)" stroke-width="16"/>
+      <text x="55" y="60" text-anchor="middle" font-size="11" fill="var(--text-3)" font-family="Plus Jakarta Sans">No data</text>`;
+    legend.innerHTML = '';
+    return;
+  }
+  const items = [
+    { label:'Income', val:income, color:'#00B288' },
+    { label:'Expenses', val:expenses, color:'#E8445A' },
+    { label:'Savings', val:savings, color:'#F59E0B' }
+  ].filter(i => i.val > 0);
+  const r = 40, cx = 55, cy = 55, strokeW = 16;
+  const circ = 2 * Math.PI * r;
+  let offset = 0;
+  let paths = `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--border)" stroke-width="${strokeW}"/>`;
+  items.forEach(item => {
+    const dash = (item.val / total) * circ;
+    const gap = circ - dash;
+    const rotation = offset * (360 / circ) - 90;
+    paths += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${item.color}" stroke-width="${strokeW}"
+      stroke-dasharray="${dash} ${gap}" stroke-dashoffset="0"
+      transform="rotate(${rotation} ${cx} ${cy})" stroke-linecap="round"/>`;
+    offset += dash;
+  });
+  svg.innerHTML = paths;
+  legend.innerHTML = items.map(item => {
+    const pct = Math.round(item.val/total*100);
+    return `<div class="legend-item">
+      <div class="legend-dot" style="background:${item.color}"></div>
+      <span class="legend-name">${item.label}</span>
+      <span class="legend-pct" style="color:${item.color}">${pct}%</span>
+    </div>`;
+  }).join('');
+}
+
+// ─────────────────────────────────────────
+//  THEME
+// ─────────────────────────────────────────
+function toggleTheme() {
+  const body = document.body;
+  const isDark = body.getAttribute('data-theme') === 'dark';
+  body.setAttribute('data-theme', isDark ? 'light' : 'dark');
+  localStorage.setItem('budget_theme', isDark ? 'light' : 'dark');
+}
+
+// ─────────────────────────────────────────
+//  CAPTURE / SCREENSHOT
+// ─────────────────────────────────────────
+function showCapture() {
+  const income = loadData('income');
+  const expenses = loadData('expense');
+  const savings = loadData('savings');
+  const incTotal = income.reduce((s,e)=>s+Number(e.amount),0);
+  const expTotal = expenses.reduce((s,e)=>s+Number(e.amount),0);
+  const savTotal = savings.reduce((s,e)=>s+Number(e.amount),0);
+  const balance = incTotal - expTotal - savTotal;
+
+  document.getElementById('capDate').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+  document.getElementById('capBalance').textContent = fmt(balance);
+  document.getElementById('capIncome').textContent = fmt(incTotal);
+  document.getElementById('capExpenses').textContent = fmt(expTotal);
+  document.getElementById('capSavings').textContent = fmt(savTotal);
+
+  // Income section
+  document.getElementById('capIncomeSection').innerHTML = income.length ? `
+    <div class="capture-section-title">💰 Income</div>
+    ${income.map(e=>`<div class="capture-item"><span class="capture-item-label">${e.emoji||'💰'} ${esc(e.label)}</span><span class="capture-item-amount" style="color:var(--income)">${fmt(e.amount)}</span></div>`).join('')}
+    <div class="capture-total" style="background:var(--income-light)"><span style="font-weight:700">Total Income</span><span style="font-weight:800;color:var(--income)">${fmt(incTotal)}</span></div>
+  ` : '';
+
+  // Expense section
+  const sortedExp = [...expenses].sort((a,b)=>(b.date||'')>(a.date||'')?1:-1);
+  document.getElementById('capExpenseSection').innerHTML = expenses.length ? `
+    <div class="capture-section-title" style="margin-top:12px">🧾 Expenses</div>
+    ${sortedExp.map(e=>`<div class="capture-item"><span class="capture-item-label">${CATEGORY_ICONS[e.category]||'📦'} ${esc(e.label)} <span style="font-size:11px;color:var(--text-2)">${e.category}</span></span><span class="capture-item-amount" style="color:var(--expense)">-${fmt(e.amount)}</span></div>`).join('')}
+    <div class="capture-total" style="background:var(--expense-light)"><span style="font-weight:700">Total Expenses</span><span style="font-weight:800;color:var(--expense)">${fmt(expTotal)}</span></div>
+  ` : '';
+
+  // Savings section
+  document.getElementById('capSavingsSection').innerHTML = savings.length ? `
+    <div class="capture-section-title" style="margin-top:12px">🏦 Savings</div>
+    ${savings.map(e=>`<div class="capture-item"><span class="capture-item-label">${e.emoji||'🏦'} ${esc(e.label)}</span><span class="capture-item-amount" style="color:var(--savings)">${fmt(e.amount)}</span></div>`).join('')}
+    <div class="capture-total" style="background:var(--savings-light)"><span style="font-weight:700">Total Savings</span><span style="font-weight:800;color:var(--savings)">${fmt(savTotal)}</span></div>
+  ` : '';
+
+  document.getElementById('captureOverlay').classList.add('visible');
+}
+
+function hideCapture() {
+  document.getElementById('captureOverlay').classList.remove('visible');
+}
+
+function doCapture() {
+  const el = document.getElementById('captureContent');
+  html2canvas(el, { backgroundColor: getComputedStyle(document.body).getPropertyValue('--bg').trim() || '#F2F1EF', scale: 2, useCORS: true }).then(canvas => {
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      if (navigator.share && navigator.canShare) {
+        const file = new File([blob], `budget-${MONTHS[currentMonth]}-${currentYear}.png`, { type: 'image/png' });
+        if (navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: 'Budget Summary' });
+          return;
+        }
+      }
+      // Fallback: download
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `budget-${MONTHS[currentMonth]}-${currentYear}.png`;
+      a.click();
+    }, 'image/png');
+  });
+}
+
+// ─────────────────────────────────────────
+//  UTILS
+// ─────────────────────────────────────────
+function esc(str) { return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ─────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────
+const savedTheme = localStorage.getItem('budget_theme');
+if (savedTheme) document.body.setAttribute('data-theme', savedTheme);
+renderAll();
+</script>
+</body>
+</html>
